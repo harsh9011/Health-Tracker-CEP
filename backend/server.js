@@ -24,6 +24,7 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/students', require('./routes/students'));
 app.use('/api/doctors', require('./routes/doctors'));
 app.use('/api/health', require('./routes/health'));
+app.use('/api/healthData', require('./routes/healthData'));
 app.use('/api/chatbot', require('./routes/chatbot'));
 
 // Error handling middleware
