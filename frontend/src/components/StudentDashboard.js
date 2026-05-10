@@ -1,5 +1,29 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  LineController,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+} from 'chart.js';
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  LineController,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+);
 
 function StudentDashboard() {
   const [user, setUser] = useState(null);
@@ -16,6 +40,16 @@ function StudentDashboard() {
   const [bmi, setBmi] = useState(null);
   const [bmiCategory, setBmiCategory] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  
+  // Chart refs
+  const bmiChartRef = useRef(null);
+  const weightChartRef = useRef(null);
+  const waterChartRef = useRef(null);
+  const caloriesChartRef = useRef(null);
+  const [bmiChartInstance, setBmiChartInstance] = useState(null);
+  const [weightChartInstance, setWeightChartInstance] = useState(null);
+  const [waterChartInstance, setWaterChartInstance] = useState(null);
+  const [caloriesChartInstance, setCaloriesChartInstance] = useState(null);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -29,6 +63,12 @@ function StudentDashboard() {
       setLoading(false);
     }
   }, []);
+
+  useEffect(() => {
+    if (healthData.length > 0) {
+      renderCharts();
+    }
+  }, [healthData]);
 
   const fetchHealthData = async (token) => {
     try {
@@ -70,6 +110,155 @@ function StudentDashboard() {
     } else {
       setBmi(null);
       setBmiCategory('');
+    }
+  };
+
+  const renderCharts = () => {
+    // Sort health data by date
+    const sortedData = [...healthData].sort((a, b) => new Date(a.date) - new Date(b.date));
+    
+    const labels = sortedData.map(data => new Date(data.date).toLocaleDateString());
+    const bmiValues = sortedData.map(data => parseFloat(data.bmi) || 0);
+    const weightValues = sortedData.map(data => parseFloat(data.weight) || 0);
+    const waterValues = sortedData.map(data => parseFloat(data.waterIntake) || 0);
+    const caloriesValues = sortedData.map(data => parseFloat(data.caloriesIntake) || 0);
+
+    // Destroy existing charts
+    if (bmiChartInstance) {
+      bmiChartInstance.destroy();
+      setBmiChartInstance(null);
+    }
+    if (weightChartInstance) {
+      weightChartInstance.destroy();
+      setWeightChartInstance(null);
+    }
+    if (waterChartInstance) {
+      waterChartInstance.destroy();
+      setWaterChartInstance(null);
+    }
+    if (caloriesChartInstance) {
+      caloriesChartInstance.destroy();
+      setCaloriesChartInstance(null);
+    }
+
+    // BMI Chart
+    const bmiCtx = bmiChartRef.current?.getContext('2d');
+    if (bmiCtx) {
+      const chart = new ChartJS(bmiCtx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [{
+            label: 'BMI',
+            data: bmiValues,
+            borderColor: '#28a745',
+            backgroundColor: 'rgba(40, 167, 69, 0.1)',
+            fill: true,
+            tension: 0.4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            y: { beginAtZero: false }
+          }
+        }
+      });
+      setBmiChartInstance(chart);
+    }
+
+    // Weight Chart
+    const weightCtx = weightChartRef.current?.getContext('2d');
+    if (weightCtx) {
+      const chart = new ChartJS(weightCtx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [{
+            label: 'Weight (kg)',
+            data: weightValues,
+            borderColor: '#007bff',
+            backgroundColor: 'rgba(0, 123, 255, 0.1)',
+            fill: true,
+            tension: 0.4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            y: { beginAtZero: false }
+          }
+        }
+      });
+      setWeightChartInstance(chart);
+    }
+
+    // Water Intake Chart
+    const waterCtx = waterChartRef.current?.getContext('2d');
+    if (waterCtx) {
+      const chart = new ChartJS(waterCtx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [{
+            label: 'Water Intake (L)',
+            data: waterValues,
+            borderColor: '#17a2b8',
+            backgroundColor: 'rgba(23, 162, 184, 0.1)',
+            fill: true,
+            tension: 0.4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            y: { beginAtZero: true }
+          }
+        }
+      });
+      setWaterChartInstance(chart);
+    }
+
+    // Calories Chart
+    const caloriesCtx = caloriesChartRef.current?.getContext('2d');
+    if (caloriesCtx) {
+      const chart = new ChartJS(caloriesCtx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [{
+            label: 'Calories Intake',
+            data: caloriesValues,
+            borderColor: '#ffc107',
+            backgroundColor: 'rgba(255, 193, 7, 0.1)',
+            fill: true,
+            tension: 0.4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            y: { beginAtZero: true }
+          }
+        }
+      });
+      setCaloriesChartInstance(chart);
     }
   };
 
@@ -382,7 +571,83 @@ function StudentDashboard() {
 
       <div style={{ marginTop: '30px' }}>
         <h3 style={{ color: '#2c3e50', marginBottom: '20px' }}>
-          📋 Your Health Records
+          � Health Progress Charts
+        </h3>
+        {healthData.length > 0 ? (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '20px' }}>
+            <div style={{ 
+              backgroundColor: '#ffffff', 
+              padding: '20px', 
+              borderRadius: '10px', 
+              boxShadow: '0 2px 10px rgba(0,0,0,0.1)' 
+            }}>
+              <h4 style={{ color: '#2c3e50', marginBottom: '15px', textAlign: 'center' }}>
+                BMI Progress
+              </h4>
+              <div style={{ height: '250px' }}>
+                <canvas ref={bmiChartRef}></canvas>
+              </div>
+            </div>
+
+            <div style={{ 
+              backgroundColor: '#ffffff', 
+              padding: '20px', 
+              borderRadius: '10px', 
+              boxShadow: '0 2px 10px rgba(0,0,0,0.1)' 
+            }}>
+              <h4 style={{ color: '#2c3e50', marginBottom: '15px', textAlign: 'center' }}>
+                Weight Progress
+              </h4>
+              <div style={{ height: '250px' }}>
+                <canvas ref={weightChartRef}></canvas>
+              </div>
+            </div>
+
+            <div style={{ 
+              backgroundColor: '#ffffff', 
+              padding: '20px', 
+              borderRadius: '10px', 
+              boxShadow: '0 2px 10px rgba(0,0,0,0.1)' 
+            }}>
+              <h4 style={{ color: '#2c3e50', marginBottom: '15px', textAlign: 'center' }}>
+                Water Intake Progress
+              </h4>
+              <div style={{ height: '250px' }}>
+                <canvas ref={waterChartRef}></canvas>
+              </div>
+            </div>
+
+            <div style={{ 
+              backgroundColor: '#ffffff', 
+              padding: '20px', 
+              borderRadius: '10px', 
+              boxShadow: '0 2px 10px rgba(0,0,0,0.1)' 
+            }}>
+              <h4 style={{ color: '#2c3e50', marginBottom: '15px', textAlign: 'center' }}>
+                Calories Intake Progress
+              </h4>
+              <div style={{ height: '250px' }}>
+                <canvas ref={caloriesChartRef}></canvas>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div style={{ 
+            textAlign: 'center', 
+            padding: '40px', 
+            color: '#666',
+            backgroundColor: '#f8f9fa',
+            borderRadius: '8px'
+          }}>
+            <h4>No health data available for charts</h4>
+            <p>Add some health data to see your progress charts!</p>
+          </div>
+        )}
+      </div>
+
+      <div style={{ marginTop: '30px' }}>
+        <h3 style={{ color: '#2c3e50', marginBottom: '20px' }}>
+          �� Your Health Records
         </h3>
         {healthData.length > 0 ? (
           healthData.map((data, index) => (
