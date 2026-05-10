@@ -102,7 +102,7 @@ function DoctorDashboard() {
   };
 
   const filteredStudents = students.filter(student =>
-    student.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (student.fullname || student.fullName)?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     student.email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -317,7 +317,7 @@ function DoctorDashboard() {
               <div style={{ display: 'grid', gap: '15px' }}>
                 {filteredStudents.map((student) => (
                   <div 
-                    key={student.id}
+                    key={student.id || student.email}
                     onClick={() => handleStudentSelect(student)}
                     style={{
                       padding: '15px',
@@ -335,18 +335,18 @@ function DoctorDashboard() {
                   >
                     <div>
                       <h4 style={{ color: '#2c3e50', marginBottom: '5px' }}>
-                        {student.fullName}
+                        {student.fullname || student.fullName || 'Unknown Name'}
                       </h4>
                       <p style={{ color: '#666', fontSize: '14px', margin: '0' }}>
-                        {student.email}
+                        {student.email || 'No email'}
                       </p>
                     </div>
                     <div style={{ textAlign: 'right' }}>
                       <p style={{ color: '#666', fontSize: '14px', margin: '0' }}>
-                        Age: {student.age}
+                        Age: {student.age || 'N/A'}
                       </p>
                       <p style={{ color: '#666', fontSize: '14px', margin: '0' }}>
-                        Gender: {student.gender}
+                        Gender: {student.gender || 'N/A'}
                       </p>
                     </div>
                   </div>
@@ -398,16 +398,16 @@ function DoctorDashboard() {
                 gap: '15px' 
               }}>
                 <div>
-                  <strong>Name:</strong> {selectedStudent.fullName}
+                  <strong>Name:</strong> {selectedStudent.fullname || selectedStudent.fullName || 'Unknown'}
                 </div>
                 <div>
-                  <strong>Email:</strong> {selectedStudent.email}
+                  <strong>Email:</strong> {selectedStudent.email || 'N/A'}
                 </div>
                 <div>
-                  <strong>Age:</strong> {selectedStudent.age}
+                  <strong>Age:</strong> {selectedStudent.age || 'N/A'}
                 </div>
                 <div>
-                  <strong>Gender:</strong> {selectedStudent.gender}
+                  <strong>Gender:</strong> {selectedStudent.gender || 'N/A'}
                 </div>
               </div>
             </div>
