@@ -13,6 +13,28 @@ import {
   Filler
 } from 'chart.js';
 
+// Add CSS for spinner animation
+const style = document.createElement('style');
+style.textContent = `
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  @-webkit-keyframes spin {
+    0% { -webkit-transform: rotate(0deg); }
+    100% { -webkit-transform: rotate(360deg); }
+  }
+  @-moz-keyframes spin {
+    0% { -moz-transform: rotate(0deg); }
+    100% { -moz-transform: rotate(360deg); }
+  }
+  @-o-keyframes spin {
+    0% { -o-transform: rotate(0deg); }
+    100% { -o-transform: rotate(360deg); }
+  }
+`;
+document.head.appendChild(style);
+
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -40,6 +62,11 @@ function StudentDashboard() {
   const [bmi, setBmi] = useState(null);
   const [bmiCategory, setBmiCategory] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  
+  // Chatbot state
+  const [chatMessage, setChatMessage] = useState('');
+  const [messages, setMessages] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
   
   // Chart refs
   const bmiChartRef = useRef(null);
@@ -323,6 +350,54 @@ function StudentDashboard() {
       }
     } catch (err) {
       setError('Error saving health data');
+    }
+  };
+
+  const handleSendMessage = async () => {
+    if (!chatMessage.trim() || isLoading) return;
+
+    const userMessage = chatMessage.trim();
+    const userData = JSON.parse(localStorage.getItem('user'));
+    
+    // Add user message to chat
+    const newMessage = {
+      sender: 'user',
+      message: userMessage,
+      timestamp: new Date().toISOString()
+    };
+    
+    setMessages(prev => [...prev, newMessage]);
+    setChatMessage('');
+    setIsLoading(true);
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.post('http://localhost:5000/api/chatbot/chat', {
+        message: userMessage,
+        userId: userData.id
+      }, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const aiMessage = {
+        sender: 'ai',
+        message: response.data.message,
+        timestamp: response.data.timestamp
+      };
+
+      setMessages(prev => [...prev, aiMessage]);
+    } catch (err) {
+      const errorMessage = {
+        sender: 'ai',
+        message: 'Sorry, I encountered an error. Please try again later.',
+        timestamp: new Date().toISOString()
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -692,6 +767,130 @@ function StudentDashboard() {
             <p>Start by adding your daily health data above!</p>
           </div>
         )}
+      </div>
+
+      <div style={{ marginTop: '30px' }}>
+        <h3 style={{ color: '#2c3e50', marginBottom: '20px' }}>
+          🤖 AI Health Assistant
+        </h3>
+        <div style={{ 
+          backgroundColor: '#ffffff', 
+          padding: '25px', 
+          borderRadius: '10px', 
+          boxShadow: '0 2px 10px rgba(0,0,0,0.1)' 
+        }}>
+          <div style={{ marginBottom: '20px' }}>
+            <p style={{ color: '#666', fontSize: '14px', marginBottom: '15px' }}>
+              Ask me about healthy eating, hydration, exercise, BMI, and nutrition!
+            </p>
+            <div style={{ 
+              height: '300px', 
+              overflowY: 'auto', 
+              border: '1px solid #ddd', 
+              borderRadius: '8px', 
+              padding: '15px', 
+              backgroundColor: '#f8f9fa',
+              marginBottom: '15px'
+            }}>
+              {messages.length === 0 ? (
+                <div style={{ textAlign: 'center', color: '#666', padding: '50px 0' }}>
+                  <p>Start a conversation with the AI Health Assistant!</p>
+                </div>
+              ) : (
+                messages.map((msg, index) => (
+                  <div key={index} style={{ marginBottom: '15px' }}>
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: msg.sender === 'user' ? 'flex-end' : 'flex-start',
+                      marginBottom: '5px'
+                    }}>
+                      <div style={{
+                        maxWidth: '75%',
+                        padding: '12px 16px',
+                        borderRadius: '18px',
+                        backgroundColor: msg.sender === 'user' ? '#007bff' : '#ffffff',
+                        color: msg.sender === 'user' ? 'white' : '#333',
+                        wordWrap: 'break-word',
+                        boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
+                        border: msg.sender === 'user' ? 'none' : '1px solid #e9ecef'
+                      }}>
+                        <div style={{ 
+                          fontSize: '14px', 
+                          lineHeight: '1.4',
+                          marginBottom: '4px' 
+                        }}>
+                          {msg.message}
+                        </div>
+                        <div style={{ 
+                          fontSize: '11px', 
+                          opacity: 0.7,
+                          textAlign: 'right'
+                        }}>
+                          {new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+              {isLoading && (
+                <div style={{ textAlign: 'center', padding: '20px' }}>
+                  <div style={{ display: 'inline-block' }}>
+                    <div style={{
+                      width: '20px',
+                      height: '20px',
+                      border: '2px solid #f3f3f3',
+                      borderTop: '2px solid #007bff',
+                      borderRadius: '50%',
+                      WebkitAnimation: 'spin 1s linear infinite',
+                      MozAnimation: 'spin 1s linear infinite',
+                      OAnimation: 'spin 1s linear infinite',
+                      animation: 'spin 1s linear infinite'
+                    }}></div>
+                  </div>
+                  <p style={{ color: '#666', marginTop: '10px', fontSize: '14px' }}>AI is thinking...</p>
+                </div>
+              )}
+            </div>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <input
+                type="text"
+                value={chatMessage}
+                onChange={(e) => setChatMessage(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                placeholder="Ask about healthy Indian food, international options, calories..."
+                disabled={isLoading}
+                style={{
+                  flex: 1,
+                  padding: '12px 16px',
+                  border: '1px solid #ddd',
+                  borderRadius: '25px',
+                  fontSize: '14px',
+                  outline: 'none',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+                }}
+              />
+              <button
+                onClick={handleSendMessage}
+                disabled={isLoading || !chatMessage.trim()}
+                style={{
+                  backgroundColor: isLoading || !chatMessage.trim() ? '#ccc' : '#007bff',
+                  color: 'white',
+                  padding: '12px 24px',
+                  border: 'none',
+                  borderRadius: '25px',
+                  cursor: isLoading || !chatMessage.trim() ? 'not-allowed' : 'pointer',
+                  fontSize: '14px',
+                  fontWeight: 'bold',
+                  boxShadow: '0 2px 4px rgba(0,123,255,0.3)',
+                  transition: 'all 0.3s ease'
+                }}
+              >
+                {isLoading ? 'Sending...' : 'Send'}
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

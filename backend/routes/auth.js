@@ -85,6 +85,20 @@ router.post('/login', async (req, res) => {
   }
 });
 
+// Get all users (for doctor dashboard)
+router.get('/users', async (req, res) => {
+  try {
+    const users = await googleSheetsService.getAllUsers();
+    res.json({
+      message: 'Users retrieved successfully',
+      users: users
+    });
+  } catch (error) {
+    console.error('Error getting users:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // Register route
 router.post('/register', async (req, res) => {
   try {

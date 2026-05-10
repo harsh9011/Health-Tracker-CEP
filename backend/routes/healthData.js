@@ -32,6 +32,7 @@ router.post('/add', async (req, res) => {
     const result = await googleSheetsService.addHealthLog(healthData);
     
     res.json({
+      success: true,
       message: 'Health log added successfully',
       data: result
     });

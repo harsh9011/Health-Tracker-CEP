@@ -321,6 +321,36 @@ class GoogleSheetsService {
       throw error;
     }
   }
+
+  async getAllUsers() {
+    try {
+      await this.initialize();
+      const sheetName = 'Users';
+      
+      const response = await this.sheets.spreadsheets.values.get({
+        spreadsheetId: this.spreadsheetId,
+        range: `${sheetName}!A:G`,
+      });
+
+      const rows = response.data.values || [];
+      const headers = rows[0];
+      const users = [];
+
+      for (let i = 1; i < rows.length; i++) {
+        const user = {};
+        headers.forEach((header, index) => {
+          const key = header.toLowerCase().replace(/\s+/g, '');
+          user[key] = rows[i][index];
+        });
+        users.push(user);
+      }
+
+      return users;
+    } catch (error) {
+      console.error('Error getting all users:', error);
+      throw error;
+    }
+  }
 }
 
 module.exports = new GoogleSheetsService();
